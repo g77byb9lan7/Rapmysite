@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Loader Windows 11 + Termux Library</title>
+
+<style>
+  :root{
+    --bg:#2b0000;
+    --accent:#ff0000;
+    --panel:#3a0000;
+    --white:#ffcccc;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    height:100vh;
+    font-family:"Courier New",monospace;
+    background:var(--bg);
+    color:var(--white);
+    display:flex;
+    justify-content:center;
+    align-items:center;
+  }
+
+  /* ===== LOGIN ===== */
+  #loginScreen{
+    position:absolute;
+    top:0;left:0;
+    width:100%;height:100%;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    background:linear-gradient(180deg,#200000,#450000);
+  }
+
+  .login-box{
+    width:min(380px,90%);
+    background:#300000;
+    padding:25px;
+    border-radius:12px;
+    border:1px solid #ff000044;
+    box-shadow:0 8px 30px #000000aa;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    align-items: center; /* para centralizar conteúdo dentro */
+  }
+
+  .login-box img {
+    width: 84px;
+    height: 84px;
+    border-radius: 8px;
+    margin-bottom: 14px;
+  }
+
+  .login-box h2{
+    color:var(--accent);
+    text-align:center;
+    margin-bottom:6px;
+  }
+
+  .login-input{
+    width:100%;
+    padding:10px;
+    border:1px solid #ff000033;
+    border-radius:8px;
+    background:#150000;
+    color:#ffcccc;
+  }
+
+  .login-btn{
+    padding:10px;
+    background:var(--accent);
+    border:none;
+    border-radius:8px;
+    color:white;
+    cursor:pointer;
+    width:100%;
+  }
+
+  .error{
+    color:#ff6666;
+    text-align:center;
+    font-size:14px;
+  }
+
+  /* ===== LOADER ===== */
+
+  .loader{
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    background:linear-gradient(180deg,#200000,#450000);
+    width:100%;
+    height:100%;
+    gap:20px;
+    padding:20px;
+    position:absolute;
+    top:0;left:0;
+  }
+
+  .loader-card{
+    width:min(600px,90%);
+    background:rgba(50,0,0,0.9);
+    border-radius:12px;
+    padding:18px;
+    border:1px solid rgba(255,0,0,0.2);
+    box-shadow:0 8px 40px rgba(0,0,0,0.7);
+    display:flex;
+    gap:12px;
+    align-items:center;
+  }
+
+  .logo-col img{ width:84px;border-radius:8px }
+
+  .info-col{ flex:1; }
+  .title{ color:var(--accent);font-size:18px;margin-bottom:8px }
+  .meta{ color:#ff5b5b88;font-size:13px;margin-bottom:12px }
+
+  .progress-wrap{ background:rgba(255,0,0,0.05);padding:8px;border-radius:10px }
+  .bar-bg{ background:rgba(255,0,0,0.1);height:14px;border-radius:8px;overflow:hidden }
+  .bar{ height:14px;background:linear-gradient(90deg,#ff0000,#b30000);border-radius:8px;width:0% }
+
+  .progress-row{
+    margin-top:8px;display:flex;justify-content:space-between;font-size:13px;color:#ffcccc
+  }
+
+  .steps{ margin-top:10px;color:#ff7f7f88;font-size:13px }
+  .small{ font-size:12px;color:#ff999988;margin-top:6px }
+
+  .skip-btn{
+    background:transparent;
+    border:1px solid rgba(255,0,0,0.45);
+    padding:8px 12px;
+    color:#ff4444;
+    border-radius:8px;
+    cursor:pointer;
+  }
+
+  /* ===== BIBLIOTECA TERMUX ===== */
+
+  #termuxLib{
+    display:none;
+    flex-direction:column;
+    width:100%;
+    height:100%;
+    padding:20px;
+    gap:18px;
+    background:linear-gradient(180deg,#1a0000,#350000);
+  }
+
+  .section{
+    background:#2a0000;
+    padding:15px;
+    border-radius:12px;
+    border:1px solid #ff000044;
+    box-shadow:0 6px 20px #00000088;
+  }
+
+  .section h2{
+    color:var(--accent);
+    font-size:20px;
+    margin-bottom:10px;
+  }
+
+  .cmd{
+    background:#150000;
+    padding:10px;
+    border-radius:8px;
+    border:1px solid #ff000022;
+    cursor:pointer;
+    transition:.2s;
+    margin-top:6px;
+  }
+
+  .cmd:hover{
+    background:#300000;
+  }
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <!-- Imagem no topo -->
+    <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRvS_kJafINZmSfN8y5CaRTn6zlUYi9L0eTJEiV6gvuMA&s=10" alt="Logo Owl">
+    <h2>Login obrigatório</h2>
+    <input class="login-input" id="user" placeholder="Login">
+    <input class="login-input" id="pass" placeholder="Senha" type="password">
+    <button class="login-btn" onclick="doLogin()">Entrar</button>
+    <div class="error" id="errorMsg"></div>
+  </div>
+</div>
+
+<!-- LOADER -->
+<div class="loader" id="loader">
+  <div class="loader-card">
+    <div class="logo-col">
+      <img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRvS_kJafINZmSfN8y5CaRTn6zlUYi9L0eTJEiV6gvuMA&s=10">
+    </div>
+
+    <div class="info-col">
+      <div class="title">carregando... — carregando...</div>
+      <div class="meta" id="metaText"> carregando...</div>
+
+      <div class="progress-wrap">
+        <div class="bar-bg"><div class="bar" id="progressBar"></div></div>
+        <div class="progress-row">
+          <div id="percent">0%</div>
+          <div id="timeLeft">Tempo restante: 0s</div>
+        </div>
+      </div>
+
+      <div class="steps" id="currentStep">Iniciando...</div>
+
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:12px">
+        <div class="small">carregando...</div>
+        <button class="skip-btn" id="btnSpeed">Acelerar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- TERMUX LIB -->
+<div id="termuxLib">
+  <div class="section">
+    <h2>tools</h2>
+    <div class="cmd">próxima eu coloco na atualização</div>
+    <div class="cmd">próxima eu coloco na atualização</div>
+    <div class="cmd">próxima eu coloco na atualização</div>
+    <div class="cmd">próxima eu coloco na atualização</div>
+  </div>
+
+  <div class="section">
+    <h2>tools</h2>
+    <div class="cmd">próxima eu coloco na atualização</div>
+    <div class="cmd">próxima eu coloco na atualização</div>
+    <div class="cmd">próxima eu coloco na atualização</div>
+    <div class="cmd"></div>
+  </div>
+
+  <div class="section">
+    <h2>tools</h2>
+    <div class="cmd">https://mega.nz/file/roJGiRoB#BjA5Q5mFa3w7kSJdM-5o1CNxUY-93uB-Bwy_vRSeSJU</div>
+    <div class="cmd">https://mega.nz/file/HhYQRYLJ#sogaqggf6iBSwEcfqsFqn4HW8CFBTJNKLSmbFsFOIAg</div>
+  </div>
+</div>
+
+<!-- SCRIPT -->
+<script>
+/* ========== LOGIN ========== */
+function doLogin(){
+  const u = document.getElementById("user").value.trim();
+  const p = document.getElementById("pass").value.trim();
+  const error = document.getElementById("errorMsg");
+
+  if(u === "Owl" && p === "Owl"){
+    document.getElementById("loginScreen").style.display = "none";
+    document.getElementById("loader").style.display = "flex";
+    startLoaderNow();
+  } else {
+    error.textContent = "Login ou senha incorretos!";
+  }
+}
+
+const TOTAL_STEPS = [
+  {name:'carregando...', time:900},
+  {name:'carregando', time:700},
+  {name:'carregando...', time:900},
+  {name:'carregando...', time:600},
+  {name:'carregando...', time:500},
+  {name:'carregando....', time:700},
+];
+
+let ACCELERATED = false;
+
+const loader = document.getElementById('loader');
+const progressBar = document.getElementById('progressBar');
+const percentEl = document.getElementById('percent');
+const timeLeftEl = document.getElementById('timeLeft');
+const currentStepEl = document.getElementById('currentStep');
+const btnSpeed = document.getElementById('btnSpeed');
+const termuxLib = document.getElementById("termuxLib");
+
+let totalTime = TOTAL_STEPS.reduce((s,i)=>s+i.time,0);
+let elapsed = 0;
+let stepIndex = 0;
+
+function updateProgressUI(){
+  const percent = Math.min(100, Math.floor((elapsed / totalTime) * 100));
+  progressBar.style.width = percent + '%';
+  percentEl.textContent = percent + '%';
+  const remainingMs = Math.max(0, totalTime - elapsed);
+  timeLeftEl.textContent = 'Tempo restante: ' + Math.ceil(remainingMs/1000) + 's';
+  currentStepEl.textContent = TOTAL_STEPS[stepIndex] ? ('Etapa: ' + TOTAL_STEPS[stepIndex].name) : 'Finalizando...';
+}
+
+function startLoaderNow(){
+  setTimeout(()=>runInstallation(), 300);
+}
+
+function runInstallation(){
+  function runNextStep(){
+    if(stepIndex >= TOTAL_STEPS.length){
+      elapsed = totalTime;
+      updateProgressUI();
+      finishLoading();
+      return;
+    }
+    let step = TOTAL_STEPS[stepIndex];
+    const factor = ACCELERATED ? 0.35 : 1;
+    const stepDuration = Math.max(80, Math.floor(step.time * factor));
+    const stepStart = performance.now();
+    currentStepEl.textContent = 'Etapa: ' + step.name;
+
+    const innerInterval = setInterval(()=>{
+      const now = performance.now();
+      const stepElapsed = now - stepStart;
+      const completedBefore = TOTAL_STEPS.slice(0,stepIndex).reduce((s,i)=>s+i.time,0);
+      const localProgress = Math.min(1, stepElapsed/stepDuration);
+      elapsed = Math.floor(completedBefore + localProgress*step.time);
+      updateProgressUI();
+      if(stepElapsed >= stepDuration){
+        clearInterval(innerInterval);
+        stepIndex++;
+        runNextStep();
+      }
+    }, 60);
+  }
+  runNextStep();
+}
+
+function finishLoading(){
+  currentStepEl.textContent = 'Concluído';
+  percentEl.textContent = '100%';
+  progressBar.style.width = '100%';
+  timeLeftEl.textContent = 'Finalizado';
+
+  setTimeout(()=>{
+    loader.style.opacity = 0;
+    setTimeout(()=>{
+      loader.style.display='none';
+      termuxLib.style.display='flex';
+    }, 600);
+  }, 500);
+}
+
+btnSpeed.addEventListener('click',()=>{
+  ACCELERATED = true;
+  btnSpeed.textContent = 'Acelerado ✓';
+  btnSpeed.disabled = true;
+});
+
+/* ========== COPIAR CMD ========== */
+document.querySelectorAll(".cmd").forEach(cmd => {
+  cmd.addEventListener("click", () => {
+    const text = cmd.textContent.trim();
+
+    navigator.clipboard.writeText(text).then(() => {
+      const original = cmd.textContent;
+      cmd.textContent = "✔ Copiado!";
+      cmd.style.background = "#400000";
+
+      setTimeout(() => {
+        cmd.textContent = original;
+        cmd.style.background = "#150000";
+      }, 900);
+    });
+  });
+});
+</script>
+
+</body>
+</html>
